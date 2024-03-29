@@ -1,30 +1,23 @@
-# Use the official Python image from the Python Docker Hub repository as the base image
-FROM python:3.12-slim-bullseye
+# For more information, please refer to https://aka.ms/vscode-docker-python
+FROM python:3.12-slim
 
-# Set the working directory to /app in the container
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
+
+# Install pip requirements
+COPY requirements.txt .
+RUN python -m pip install -r requirements.txt
+
 WORKDIR /app
+COPY . /app
 
-# Create a non-root user named 'myuser' with a home directory
-RUN useradd -m myuser
+# Creates a non-root user with an explicit UID and adds permission to access the /app folder
+# For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
+RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
+USER appuser
 
-# Copy the requirements.txt file to the container to install Python dependencies
-COPY requirements.txt ./
-
-# Install the Python packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Before copying the application code, create the logs and qr_codes directories
-# and ensure they are owned by the non-root user
-RUN mkdir logs qr_codes && chown myuser:myuser logs qr_codes
-
-# Copy the rest of the application's source code into the container, setting ownership to 'myuser'
-COPY --chown=myuser:myuser . .
-
-# Switch to the 'myuser' user to run the application
-USER myuser
-
-# Use the Python interpreter as the entrypoint and the script as the first argument
-# This allows additional command-line arguments to be passed to the script via the docker run command
-ENTRYPOINT ["python", "main.py"]
-# this sets a default argument, its also set in the program but this just illustrates how to use cmd and override it from the terminal
-CMD ["--url","http://github.com/kaw393939"]
+# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
+CMD ["python", "main.py"]
